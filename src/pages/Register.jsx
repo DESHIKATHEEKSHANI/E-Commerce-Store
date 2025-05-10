@@ -71,15 +71,17 @@ const Register = () => {
   };
   
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      const success = await register(formData.name, formData.email, formData.password);
-      if (success) {
-        navigate('/');
-      }
+  e.preventDefault();
+
+  if (validateForm()) {
+    const success = await register(formData.name, formData.email, formData.password);
+    if (success) {
+      alert('Account created successfully!');
+      navigate('/');
     }
-  };
+  }
+};
+
   
   if (loading) return <Loader />;
   

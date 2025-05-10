@@ -70,6 +70,7 @@ const Login = () => {
     if (validateForm()) {
       const success = await login(formData.email, formData.password);
       if (success) {
+        alert('Login successfully!');
         navigate(from, { replace: true });
       }
     }
