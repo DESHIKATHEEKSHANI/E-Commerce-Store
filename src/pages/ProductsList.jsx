@@ -24,7 +24,7 @@ const ProductsList = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get('/api/products/categories');
+        const res = await axios.get('http://localhost:5000/api/products/categories');
         setCategories(res.data);
       } catch (err) {
         console.error('Failed to fetch categories', err);
@@ -52,7 +52,7 @@ const ProductsList = () => {
         params.append('page', currentPage);
         params.append('limit', 12); // 12 products per page
         
-        const res = await axios.get(`/api/products?${params.toString()}`);
+        const res = await axios.get(`http://localhost:5000/api/products?${params.toString()}`);
         setProducts(res.data.products);
         setTotalPages(res.data.totalPages || 1);
         setLoading(false);

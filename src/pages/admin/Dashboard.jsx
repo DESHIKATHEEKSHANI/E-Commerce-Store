@@ -43,7 +43,7 @@ const AdminDashboard = () => {
         setRecentOrders(ordersRes.data);
 
         // Fetch recent products
-        const productsRes = await axios.get('/api/products?limit=5');
+        const productsRes = await axios.get('http://localhost:5000/api/products?limit=5');
         setRecentProducts(productsRes.data);
 
         setLoading(false);
