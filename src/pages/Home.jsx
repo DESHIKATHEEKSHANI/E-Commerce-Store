@@ -16,11 +16,11 @@ const Home = () => {
         setLoading(true);
         
         // Fetch featured products
-        const featuredRes = await axios.get('/api/products?featured=true&limit=4');
+        const featuredRes = await axios.get('http://localhost:5000/api/products?featured=true&limit=4');
         setFeaturedProducts(featuredRes.data.products);
         
         // Fetch new arrivals
-        const newArrivalsRes = await axios.get('/api/products?sort=-createdAt&limit=4');
+        const newArrivalsRes = await axios.get('http://localhost:5000/api/products?sort=-createdAt&limit=4');
         setNewArrivals(newArrivalsRes.data.products);
         
         setLoading(false);

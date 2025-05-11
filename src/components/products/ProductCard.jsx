@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useCart } from '../../context/CartContext';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useCart } from "../../context/CartContext";
+import ImageHandler from "../UI/ImageHandler"; // Import our new component
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const [isHovered, setIsHovered] = useState(false);
-  
+
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -13,11 +14,28 @@ const ProductCard = ({ product }) => {
   };
 
   // Calculate discount percentage if there's a sale price
-  const discountPercentage = product.salePrice && 
+  const discountPercentage =
+    product.salePrice &&
     Math.round(((product.price - product.salePrice) / product.price) * 100);
 
+  // Get the appropriate image source
+  const getProductImage = (product) => {
+    // First try to get from images array
+    if (product.images && product.images.length > 0) {
+      return product.images[0];
+    }
+
+    // Then try the image field
+    if (product.image) {
+      return product.image;
+    }
+
+    // Return null and let ImageHandler use the default placeholder
+    return null;
+  };
+
   return (
-    <Link 
+    <Link
       to={`/product/${product._id}`}
       className="group relative bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
       onMouseEnter={() => setIsHovered(true)}
@@ -29,50 +47,45 @@ const ProductCard = ({ product }) => {
           {discountPercentage}% OFF
         </div>
       )}
-      
+
       {/* Image */}
       <div className="relative pt-[100%] bg-gray-200">
         <div className="absolute inset-0 flex items-center justify-center">
-          {product.images && product.images.length > 0 ? (
-            <img 
-              src={product.images[0]} 
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full w-full bg-gray-300">
-              <span className="text-gray-500">No image</span>
-            </div>
-          )}
+          <ImageHandler 
+            src={getProductImage(product)}
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
         </div>
-        
+
         {/* Quick Add Button */}
-        <div 
+        <div
           className={`absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-center py-2 transform transition-transform ${
-            isHovered ? 'translate-y-0' : 'translate-y-full'
+            isHovered ? "translate-y-0" : "translate-y-full"
           }`}
         >
-          <button 
-            onClick={handleAddToCart}
-            className="w-full font-medium"
-          >
+          <button onClick={handleAddToCart} className="w-full font-medium">
             Add to Cart
           </button>
         </div>
       </div>
-      
+
       {/* Product Details */}
       <div className="p-4">
-        <h3 className="font-medium text-gray-900 group-hover:text-gray-600 truncate">{product.name}</h3>
-        
+        <h3 className="font-medium text-gray-900 group-hover:text-gray-600 truncate">
+          {product.name}
+        </h3>
+
         <div className="mt-1 flex items-center">
           {/* Star Rating */}
           <div className="flex items-center">
             {[...Array(5)].map((_, i) => (
-                              <svg 
+              <svg
                 key={i}
                 className={`w-4 h-4 ${
-                  i < Math.round(product.rating || 0) ? 'text-yellow-400' : 'text-gray-300'
+                  i < Math.round(product.rating || 0)
+                    ? "text-yellow-400"
+                    : "text-gray-300"
                 }`}
                 fill="currentColor"
                 viewBox="0 0 20 20"
@@ -85,19 +98,25 @@ const ProductCard = ({ product }) => {
             </span>
           </div>
         </div>
-        
+
         {/* Price */}
         <div className="mt-2 flex items-center">
           {product.salePrice ? (
             <>
-              <span className="text-red-600 font-medium">${product.salePrice.toFixed(2)}</span>
-              <span className="ml-2 text-gray-500 text-sm line-through">${product.price.toFixed(2)}</span>
+              <span className="text-red-600 font-medium">
+                ${product.salePrice.toFixed(2)}
+              </span>
+              <span className="ml-2 text-gray-500 text-sm line-through">
+                ${product.price.toFixed(2)}
+              </span>
             </>
           ) : (
-            <span className="text-gray-900 font-medium">${product.price.toFixed(2)}</span>
+            <span className="text-gray-900 font-medium">
+              ${product.price.toFixed(2)}
+            </span>
           )}
         </div>
-        
+
         {/* Stock Status */}
         <div className="mt-2">
           {product.countInStock > 0 ? (
