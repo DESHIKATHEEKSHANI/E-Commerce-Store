@@ -58,7 +58,7 @@ const ProductForm = () => {
       
       try {
         setProductLoading(true);
-        const res = await axios.get(`/api/products/${id}`);
+        const res = await axios.get(`http://localhost:5000/api/products/${id}`);
         
         // Format the data for the form
         const productData = res.data;
@@ -77,7 +77,7 @@ const ProductForm = () => {
         
         // Set image preview if available
         if (productData.image) {
-          setImagePreview(productData.image);
+          setImagePreview(`http://localhost:5000${productData.image}`);
         }
         
         setProductLoading(false);
@@ -146,7 +146,7 @@ const ProductForm = () => {
       
       if (id) {
         // Update existing product
-        response = await axios.put(`/api/products/${id}`, formData, {
+        response = await axios.put(`http://localhost:5000/api/products/${id}`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
