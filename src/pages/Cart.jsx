@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import Loader from '../components/UI/Loader';
+import ImageHandler from '../components/UI/ImageHandler'; // Import ImageHandler component
 
 const Cart = () => {
   const { cartItems, loading, updateCartItem, removeFromCart, cartTotal } = useCart();
@@ -73,17 +74,12 @@ const Cart = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded">
-                            {item.image ? (
-                              <img 
-                                src={item.image} 
-                                alt={item.name} 
-                                className="h-16 w-16 object-contain"
-                              />
-                            ) : (
-                              <div className="h-16 w-16 flex items-center justify-center text-gray-500 text-xs">
-                                No image
-                              </div>
-                            )}
+                            {/* Replace standard img with ImageHandler */}
+                            <ImageHandler 
+                              src={item.image} 
+                              alt={item.name} 
+                              className="h-16 w-16 object-contain"
+                            />
                           </div>
                           <div className="ml-4">
                             <Link 
