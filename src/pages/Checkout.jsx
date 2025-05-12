@@ -42,7 +42,6 @@ const Checkout = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate cart is not empty
     if (cartItems.length === 0) {
       setError("Your cart is empty");
       return;
@@ -52,7 +51,6 @@ const Checkout = () => {
       setLoading(true);
       setError(null);
 
-      // Create order
       const order = {
         orderItems: cartItems.map((item) => ({
           product: item._id,
@@ -66,18 +64,18 @@ const Checkout = () => {
         shippingAddress,
         paymentMethod,
         itemsPrice: cartTotal,
-        shippingPrice: 0, // You can calculate shipping cost based on your business rules
-        taxPrice: cartTotal * 0.1, // Example: 10% tax
-        totalPrice: cartTotal + cartTotal * 0.1, // Total + tax
+        shippingPrice: 0,
+        taxPrice: cartTotal * 0.1,
+        totalPrice: cartTotal + cartTotal * 0.1,
       };
 
-      // Send order to API
-      const res = await axios.post("http://localhost:5000/api/orders", order);
+      const res = await axios.post("http://localhost:5000/api/orders", order, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
 
-      // Clear cart
       clearCart();
-
-      // Redirect to order confirmation
       navigate(`/order/${res.data._id}`, {
         state: {
           success: true,
