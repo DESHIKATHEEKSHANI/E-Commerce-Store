@@ -72,7 +72,7 @@ const Checkout = () => {
       };
 
       // Send order to API
-      const res = await axios.post("/api/orders", order);
+      const res = await axios.post("http://localhost:5000/api/orders", order);
 
       // Clear cart
       clearCart();
