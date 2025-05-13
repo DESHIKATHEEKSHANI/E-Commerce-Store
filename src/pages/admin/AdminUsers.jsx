@@ -7,6 +7,7 @@ const AdminUsers = () => {
   const { user, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -23,8 +24,9 @@ const AdminUsers = () => {
     }
   }, [isAuthenticated, isAdmin, loading, navigate]);
 
+  // Fetch both users and orders data
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         // Make sure Authorization header is set with the token
@@ -33,21 +35,34 @@ const AdminUsers = () => {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         }
 
-        const response = await axios.get('/api/users');
-        setUsers(response.data);
+        // Fetch users and orders in parallel
+        const [usersResponse, ordersResponse] = await Promise.all([
+          axios.get('/api/users'),
+          axios.get('/api/orders')
+        ]);
+
+        setUsers(usersResponse.data);
+        setOrders(ordersResponse.data);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching users:', err);
-        setError('Failed to load users. Please try again.');
+        console.error('Error fetching data:', err);
+        setError('Failed to load data. Please try again.');
         setLoading(false);
       }
     };
 
-    fetchUsers();
+    fetchData();
   }, []);
 
+  // Get order count for each user
+  const getUserOrderCount = (userId) => {
+    return orders.filter(order => order.user && order.user._id === userId).length;
+  };
+
   const handleViewUser = (user) => {
-    setSelectedUser(user);
+    // Calculate order count for selected user
+    const orderCount = getUserOrderCount(user._id);
+    setSelectedUser({ ...user, orderCount });
     setShowUserModal(true);
   };
 
@@ -68,12 +83,18 @@ const AdminUsers = () => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }
 
+      // Use the correct endpoint format
       await axios.delete(`/api/users/${userId}`);
+      
+      // Update the users state after successful deletion
       setUsers(users.filter(user => user._id !== userId));
       setConfirmDelete(null);
+      
+      // Show success message
+      setError(null);
     } catch (err) {
       console.error('Error deleting user:', err);
-      setError('Failed to delete user. Please try again.');
+      setError(`Failed to delete user: ${err.response?.data?.message || 'Unknown error'}`);
     }
   };
 
@@ -125,7 +146,7 @@ const AdminUsers = () => {
         </Link>
       </div>
 
-      {/* Error alert */}
+      {/* Success/Error alert */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
           <p>{error}</p>
@@ -205,7 +226,7 @@ const AdminUsers = () => {
                       {formatDate(user.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.orderCount || 0}
+                      {getUserOrderCount(user._id)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
@@ -320,7 +341,7 @@ const AdminUsers = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Orders:</p>
-                  <p className="font-medium">{selectedUser.orderCount || 0}</p>
+                  <p className="font-medium">{selectedUser.orderCount || getUserOrderCount(selectedUser._id)}</p>
                 </div>
               </div>
               

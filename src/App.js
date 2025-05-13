@@ -7,6 +7,7 @@ import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/routes/PrivateRoute';
 import AdminRoute from './components/routes/AdminRoute';
+import EditUser from './pages/admin/EditUser';
 
 // Lazy loaded components
 const Home = lazy(() => import('./pages/Home'));
@@ -57,6 +58,7 @@ function App() {
                     <Route path="/admin/users" element={<AdminUsers />} />
                     <Route path="/admin/products/new" element={<ProductForm />} />
                     <Route path="/admin/products/:id/edit" element={<ProductForm />} />
+                    <Route path="/admin/users/:id/edit" element={<EditUser />} />
                   </Route>
                 </Routes>
               </Suspense>
