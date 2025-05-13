@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import ImageHandler from '../../components/UI/ImageHandler';
+
 
 const AdminDashboard = () => {
   const { user, isAuthenticated, isAdmin } = useAuth();
@@ -16,6 +18,10 @@ const AdminDashboard = () => {
   const [recentProducts, setRecentProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderDetails, setOrderDetails] = useState(null);
+  const [orderLoading, setOrderLoading] = useState(false);
 
   // Check if user is admin, redirect if not
   useEffect(() => {
@@ -43,8 +49,9 @@ const AdminDashboard = () => {
         setRecentOrders(ordersRes.data);
 
         // Fetch recent products
-        const productsRes = await axios.get('http://localhost:5000/api/products?limit=5');
-        setRecentProducts(productsRes.data);
+        const productsRes = await axios.get('/api/products?limit=5');
+        setRecentProducts(productsRes.data.products); // Note the `.products`
+
 
         setLoading(false);
       } catch (err) {
@@ -56,6 +63,34 @@ const AdminDashboard = () => {
 
     fetchDashboardData();
   }, []);
+
+  // Fetch order details when modal is opened
+  const handleViewOrder = async (orderId) => {
+    try {
+      setOrderLoading(true);
+      setSelectedOrder(orderId);
+      setShowOrderModal(true);
+      
+      const token = localStorage.getItem('token');
+      if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await axios.get(`/api/orders/${orderId}`);
+      setOrderDetails(response.data);
+      setOrderLoading(false);
+    } catch (err) {
+      console.error('Error fetching order details:', err);
+      setError('Failed to load order details. Please try again.');
+      setOrderLoading(false);
+    }
+  };
+
+  const closeOrderModal = () => {
+    setShowOrderModal(false);
+    setSelectedOrder(null);
+    setOrderDetails(null);
+  };
 
   // Status badge color
   const getStatusBadgeColor = (status) => {
@@ -219,9 +254,12 @@ const AdminDashboard = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <Link to={`/admin/orders/${order._id}`} className="text-blue-600 hover:text-blue-800">
+                        <button 
+                          onClick={() => handleViewOrder(order._id)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
                           View
-                        </Link>
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -253,7 +291,7 @@ const AdminDashboard = () => {
               <div key={product._id} className="border rounded-lg overflow-hidden">
                 <div className="h-36 bg-gray-200">
                   {product.image ? (
-                    <img 
+                    <ImageHandler
                       src={product.image} 
                       alt={product.name} 
                       className="h-full w-full object-cover"
@@ -293,6 +331,175 @@ const AdminDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Order Details Modal */}
+      {showOrderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Order Details</h3>
+                <button 
+                  onClick={closeOrderModal}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {orderLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              ) : orderDetails ? (
+                <div>
+                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Order ID:</p>
+                        <p className="font-medium">#{orderDetails._id}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Date:</p>
+                        <p className="font-medium">{formatDate(orderDetails.createdAt)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Customer:</p>
+                        <p className="font-medium">{orderDetails.user?.name || 'Guest'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Email:</p>
+                        <p className="font-medium">{orderDetails.user?.email || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Total Amount:</p>
+                        <p className="font-medium">${orderDetails.totalPrice?.toFixed(2) || '0.00'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Status:</p>
+                        <p className={`inline-block px-2 py-1 text-xs rounded-full font-medium ${getStatusBadgeColor(orderDetails.status)}`}>
+                          {orderDetails.status?.charAt(0).toUpperCase() + orderDetails.status?.slice(1) || 'Processing'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Shipping Information */}
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-2">Shipping Information</h4>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p><span className="text-gray-500">Address:</span> {orderDetails.shippingAddress?.address}</p>
+                      <p><span className="text-gray-500">City:</span> {orderDetails.shippingAddress?.city}</p>
+                      <p><span className="text-gray-500">Postal Code:</span> {orderDetails.shippingAddress?.postalCode}</p>
+                      <p><span className="text-gray-500">Country:</span> {orderDetails.shippingAddress?.country}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Payment Information */}
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-2">Payment Information</h4>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p><span className="text-gray-500">Payment Method:</span> {orderDetails.paymentMethod}</p>
+                      <p><span className="text-gray-500">Paid:</span> {orderDetails.isPaid ? formatDate(orderDetails.paidAt) : 'Not paid'}</p>
+                      <p><span className="text-gray-500">Delivered:</span> {orderDetails.isDelivered ? formatDate(orderDetails.deliveredAt) : 'Not delivered'}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Order Items */}
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-2">Order Items</h4>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr>
+                            <th className="text-left font-medium text-gray-500 pb-2">Product</th>
+                            <th className="text-left font-medium text-gray-500 pb-2">Quantity</th>
+                            <th className="text-left font-medium text-gray-500 pb-2">Price</th>
+                            <th className="text-left font-medium text-gray-500 pb-2">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {orderDetails.orderItems && orderDetails.orderItems.map((item, index) => (
+                            <tr key={index}>
+                              <td className="py-2">
+                                <div className="flex items-center">
+                                  <div className="h-10 w-10 bg-gray-200 mr-2 flex-shrink-0">
+                                    {item.image ? (
+                                      <ImageHandler
+                                        src={item.image}
+                                        alt={item.name}
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                          e.target.onerror = null;
+                                          e.target.src = '/api/placeholder/40/40';
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="flex items-center justify-center h-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className="text-gray-900 font-medium">{item.name}</span>
+                                </div>
+                              </td>
+                              <td className="py-2">{item.qty}</td>
+                              <td className="py-2">${item.price?.toFixed(2) || '0.00'}</td>
+                              <td className="py-2">${(item.qty * item.price).toFixed(2) || '0.00'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  
+                  {/* Order Summary */}
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-2">Order Summary</h4>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-500">Items:</span>
+                        <span>${orderDetails.itemsPrice?.toFixed(2) || '0.00'}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-500">Shipping:</span>
+                        <span>${orderDetails.shippingPrice?.toFixed(2) || '0.00'}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-500">Tax:</span>
+                        <span>${orderDetails.taxPrice?.toFixed(2) || '0.00'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 font-bold">
+                        <span>Total:</span>
+                        <span>${orderDetails.totalPrice?.toFixed(2) || '0.00'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={closeOrderModal}
+                      className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+                    >
+                      Close
+                    </button>
+                    
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  Failed to load order details. Please try again.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
